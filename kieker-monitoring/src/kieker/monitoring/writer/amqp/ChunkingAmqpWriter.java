@@ -69,7 +69,7 @@ public class ChunkingAmqpWriter implements IRawDataWriter {
 	private final Channel channel;
 
 	public ChunkingAmqpWriter(final Configuration configuration)
-			throws KeyManagementException, NoSuchAlgorithmException, URISyntaxException, IOException, TimeoutException {
+			throws KeyManagementException, NoSuchAlgorithmException, URISyntaxException, IOException, TimeoutException, InterruptedException {
 		// Read configuration parameters from configuration
 		this.uri = configuration.getStringProperty(CONFIG_URI);
 		this.exchangeName = configuration.getStringProperty(CONFIG_EXCHANGENAME);
@@ -82,7 +82,17 @@ public class ChunkingAmqpWriter implements IRawDataWriter {
 			this.heartbeat = configuredHeartbeat;
 		}
 
-		this.connection = this.createConnection();
+		Connection connection;
+		while (true) {
+			try {
+				connection = this.createConnection();
+				break;
+			} catch (Exception e) {
+				LOGGER.warn("Something went wrong, waiting 5 seconds before retry...");
+				Thread.sleep(5000);
+			}
+		}
+		this.connection = connection;
 		this.channel = this.connection.createChannel();
 	}
 

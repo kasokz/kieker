@@ -98,7 +98,8 @@ public class AmqpWriter extends AbstractMonitoringWriter implements IRegistryLis
 	 */
 	private final GetIdAdapter<String> writeBytesAdapter;
 
-	public AmqpWriter(final Configuration configuration) throws KeyManagementException, NoSuchAlgorithmException, URISyntaxException, IOException, TimeoutException {
+	public AmqpWriter(final Configuration configuration)
+			throws KeyManagementException, NoSuchAlgorithmException, URISyntaxException, IOException, TimeoutException, InterruptedException {
 		super(configuration);
 
 		// Read configuration parameters from configuration
@@ -116,7 +117,17 @@ public class AmqpWriter extends AbstractMonitoringWriter implements IRegistryLis
 		final int bufferSize = DEFAULT_BUFFER_SIZE;
 		this.buffer = ByteBuffer.allocate(bufferSize);
 
-		this.connection = this.createConnection();
+		Connection connection;
+		while (true) {
+			try {
+				connection = this.createConnection();
+				break;
+			} catch (Exception e) {
+				LOGGER.warn("Something went wrong, waiting 5 seconds before retry...");
+				Thread.sleep(5000);
+			}
+		}
+		this.connection = connection;
 		this.channel = this.connection.createChannel();
 
 		this.writerRegistry = new WriterRegistry(this);

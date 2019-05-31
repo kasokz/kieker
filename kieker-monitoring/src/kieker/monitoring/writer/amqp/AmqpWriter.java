@@ -123,7 +123,7 @@ public class AmqpWriter extends AbstractMonitoringWriter implements IRegistryLis
 				connection = this.createConnection();
 				break;
 			} catch (Exception e) {
-				LOGGER.warn("Something went wrong, waiting 5 seconds before retry...");
+				LOGGER.warn("Could not connect to AMQP server, waiting 5 seconds before retry...");
 				Thread.sleep(5000);
 			}
 		}

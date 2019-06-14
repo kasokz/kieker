@@ -35,7 +35,8 @@ import kieker.analysis.plugin.reader.newio.Outcome;
 import kieker.common.configuration.Configuration;
 
 /**
- * AMQP reader plugin that supports chunking using the new raw data I/O infrastructure.
+ * AMQP reader plugin that supports chunking using the new raw data I/O
+ * infrastructure.
  *
  * @author Holger Knoche
  *
@@ -74,25 +75,31 @@ public class ChunkingAmqpReader implements IRawDataReader {
 
 	@Override
 	public Outcome onInitialization() {
-		try {
-			// Prepare the connection, channel and consumer
-			this.connection = this.createConnection();
-			this.channel = this.connection.createChannel();
-			this.consumer = new QueueingConsumer(this.channel);
-
-			return Outcome.SUCCESS;
-		} catch (final KeyManagementException | NoSuchAlgorithmException | TimeoutException | URISyntaxException | IOException e) {
-			this.handleInitializationError(e);
-
-			return Outcome.FAILURE;
+		while (true) {
+			try {
+				// Prepare the connection, channel and consumer
+				this.connection = this.createConnection();
+				this.channel = this.connection.createChannel();
+				this.consumer = new QueueingConsumer(this.channel);
+				return Outcome.SUCCESS;
+			} catch (final KeyManagementException | NoSuchAlgorithmException | TimeoutException | URISyntaxException
+					| IOException e) {
+				this.handleInitializationError(e);
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e1) {
+				}
+				// return Outcome.FAILURE;
+			}
 		}
 	}
 
 	private void handleInitializationError(final Throwable e) {
-		LOGGER.error("An error occurred initializing the AMQP reader.", e);
+		LOGGER.error("An error occurred initializing the AMQP reader. Waiting for 5 seconds before retry...", e);
 	}
 
-	private Connection createConnection() throws IOException, TimeoutException, KeyManagementException, NoSuchAlgorithmException, URISyntaxException {
+	private Connection createConnection()
+			throws IOException, TimeoutException, KeyManagementException, NoSuchAlgorithmException, URISyntaxException {
 		final ConnectionFactory connectionFactory = new ConnectionFactory();
 
 		connectionFactory.setUri(this.uri);
